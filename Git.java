@@ -6,12 +6,16 @@ import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.ArrayList;
 
 import javax.swing.text.AbstractDocument.Content;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.lang.StringBuilder;
 
 
@@ -237,11 +241,50 @@ public class Git {
 
         writer.close();
         br.close();
+
+       
     }
 
 
-    public String createTree(ArrayList<GitObject> workingList, String dirPath) {
-        return "";
+    public String createTree(ArrayList<GitObject> workingList, String dirPath) throws IOException {
+        
+        Path treePath = Paths.get(dirPath);
+        
+        Stream<Path> stream = Files.list(treePath);
+
+        List<Path> list = stream.toList();
+
+        //List<Path> allFilePaths = stream.filter(Files::isRegularFile).collect(Collectors.toList());
+        stream.close();
+
+
+    }
+
+
+    public ArrayList<GitObject> createWorkingList(ArrayList<GitObject> workingList) throws IOException {
+        
+        ArrayList<GitObject> newList = new ArrayList<GitObject>();
+
+        BufferedReader br = new BufferedReader(new FileReader(index));
+        String contents = br.readLine();
+
+    
+
+        while (contents != null) {
+            String[] result = contents.split(" ");
+            String hash = result[0];
+            String path = result[1];
+
+            newList.add(new BLOB(hash, path));
+
+            contents = br.readLine();
+            
+        }
+
+        br.close();
+
+        return newList;
+
     }
 
 }
