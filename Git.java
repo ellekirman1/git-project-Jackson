@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
+import java.util.ArrayList;
 
 import javax.swing.text.AbstractDocument.Content;
 
@@ -82,12 +83,12 @@ public class Git {
 
             // newGit.addFileEntry("Hello.txt");
 
-            System.out.println("----making testFolder/test.txt-----");
+            // System.out.println("----making testFolder/test.txt-----");
 
-            System.out.println(hashFile("testFolder/test.txt"));
-            newGit.makeBlob("testFolder/test.txt");
+            // System.out.println(hashFile("testFolder/test.txt"));
+            // newGit.makeBlob("testFolder/test.txt");
 
-            newGit.addFileEntry("testFolder/test.txt");
+            // newGit.addFileEntry("testFolder/test.txt");
 
 
         } catch (Exception e) {
@@ -237,4 +238,10 @@ public class Git {
         writer.close();
         br.close();
     }
+
+
+    public String createTree(ArrayList<GitObject> workingList, String dirPath) {
+        return "";
+    }
+
 }
