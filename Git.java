@@ -72,20 +72,20 @@ public class Git {
 
             newGit.addFileEntry("test.txt");
 
-            // System.out.println("----making bigfile.txt-----");
+            System.out.println("----making Hello.txt-----");
 
-            // System.out.println(hashFile("bigfile.txt"));
-            // newGit.makeBlob("bigfile.txt");
+            System.out.println(hashFile("Hello.txt"));
+            newGit.makeBlob("Hello.txt");
 
-            // newGit.addFileEntry("bigfile.txt");
+            newGit.addFileEntry("Hello.txt");
+
             
+            System.out.println("----making bigfile.txt-----");
 
-            // System.out.println("----making Hello.txt-----");
+            System.out.println(hashFile("bigfile.txt"));
+            newGit.makeBlob("bigfile.txt");
 
-            // System.out.println(hashFile("Hello.txt"));
-            // newGit.makeBlob("Hello.txt");
-
-            // newGit.addFileEntry("Hello.txt");
+            newGit.addFileEntry("bigfile.txt");
 
             // System.out.println("----making testFolder/test.txt-----");
 
@@ -93,6 +93,27 @@ public class Git {
             // newGit.makeBlob("testFolder/test.txt");
 
             // newGit.addFileEntry("testFolder/test.txt");
+
+            System.out.println("-----testing createTree------");
+            ArrayList<GitObject> testList = new ArrayList<GitObject>();
+            
+            // adding hello.txt
+            testList.add(new BLOB(hashFile("Hello.txt"), "Hello.txt"));
+
+            // adding bigfile.txt
+            testList.add(new BLOB(hashFile("bigfile.txt"), "bigfile.txt"));
+
+            // adding test.txt
+            testList.add(new BLOB(hashFile("test.txt"), "test.txt"));
+
+  
+
+            String root = newGit.createTree(testList, "");
+            System.out.println("root tree: " + root);
+            
+
+            
+ 
 
 
         } catch (Exception e) {
@@ -150,6 +171,23 @@ public class Git {
 
         byte[] fileBytes = Files.readAllBytes(path);
 
+        return (hashText(fileBytes));
+
+        // MessageDigest digest;
+
+        // try {
+        //     digest = MessageDigest.getInstance("SHA-1");
+        // } catch (NoSuchAlgorithmException e) {
+        //     throw new IllegalStateException("SHA-1 is not available", e);
+        // }
+
+        // byte[] hashByteArray = digest.digest(fileBytes);
+
+        // return HexFormat.of().formatHex(hashByteArray);
+    }
+
+    public static String hashText(byte[] fileBytes) throws IOException {
+        
         MessageDigest digest;
 
         try {
@@ -248,16 +286,72 @@ public class Git {
 
     public String createTree(ArrayList<GitObject> workingList, String dirPath) throws IOException {
         
-        Path treePath = Paths.get(dirPath);
+        ArrayList<GitObject> children = new ArrayList<GitObject>();
+
+        // this for loop will compare the last / in each path inside the working list
+        // it will take the substring of that path from its start to that last /
+        // if that substring equals the dirPath, then it must be a child
+        // all children get added to the children array
         
-        Stream<Path> stream = Files.list(treePath);
+        for (int i = 0; i < workingList.size(); i++) {
+            GitObject currentObject = workingList.get(i);
+            int objectLastSlash = currentObject.getPath().lastIndexOf("/");
 
-        List<Path> list = stream.toList();
+            String objectFolderPath;
 
-        //List<Path> allFilePaths = stream.filter(Files::isRegularFile).collect(Collectors.toList());
-        stream.close();
+            if (objectLastSlash == -1) {
+                objectFolderPath = "";
+            } else {
+                objectFolderPath = currentObject.getPath().substring(0, objectLastSlash);
+            }
+
+            
+            if (dirPath.equals(objectFolderPath)) {
+                children.add(currentObject);
+            }
+            
+        }
+
+        StringBuilder directoryContents = new StringBuilder();
+
+        for (int j = 0; j < children.size(); j++) {
+            GitObject child = children.get(j);
+            
+            String objectType = getObjectType(child); // see method below
+            String objectHash = child.getHash(); // hash of child
+            String objectPath = child.getPath(); // path of child
+
+            String childName = objectPath.substring(objectPath.lastIndexOf("/") + 1); // gives just the local path, not absolute one
+            
+            if (j == 0) { // if, then used to account for new lines between appends
+                directoryContents.append(objectType + " " + objectHash + " " + childName);
+            } else {
+                directoryContents.append("\n" + objectType + " " + objectHash + " " + childName);
+            }
+        }
+
+        //below lines get the hash of this whole file for the name
+        String treeContents = directoryContents.toString(); // turning the stringbuilder into a string to then hash
+        String hashedFile = hashText(treeContents.getBytes());
+
+        // below lines will actually write into objects folder
+        File newFile = new File(objects, hashedFile);
+        FileWriter writer = new FileWriter(newFile);
+        writer.write(treeContents);
+        writer.close();
+
+        return hashedFile;
 
 
+
+    }
+
+    private String getObjectType(GitObject unknownObject) {
+        if (unknownObject instanceof BLOB) {
+            return "blob";
+        } else {
+            return "tree";
+        }
     }
 
 
@@ -275,7 +369,7 @@ public class Git {
             String hash = result[0];
             String path = result[1];
 
-            newList.add(new BLOB(hash, path));
+            newList.add(new BLOB(hash, path)); // see the BLOB.java file where I made blob objects
 
             contents = br.readLine();
             
