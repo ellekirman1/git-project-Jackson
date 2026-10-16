@@ -355,7 +355,7 @@ public class Git {
     }
 
 
-    public ArrayList<GitObject> createWorkingList(ArrayList<GitObject> workingList) throws IOException {
+    public ArrayList<GitObject> createWorkingList() throws IOException {
         
         ArrayList<GitObject> newList = new ArrayList<GitObject>();
 
