@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.ArrayList;
+import java.util.Collections;
 
 import javax.swing.text.AbstractDocument.Content;
 
@@ -87,29 +88,55 @@ public class Git {
 
             newGit.addFileEntry("bigfile.txt");
 
-            // System.out.println("----making testFolder/test.txt-----");
+            System.out.println("----making testFolder/test.txt-----");
 
-            // System.out.println(hashFile("testFolder/test.txt"));
-            // newGit.makeBlob("testFolder/test.txt");
+            System.out.println(hashFile("testFolder/test.txt"));
+            newGit.makeBlob("testFolder/test.txt");
 
-            // newGit.addFileEntry("testFolder/test.txt");
+            newGit.addFileEntry("testFolder/test.txt");
 
-            System.out.println("-----testing createTree------");
-            ArrayList<GitObject> testList = new ArrayList<GitObject>();
+            System.out.println("----making testFolder/innerFolder/a.txt-----");
+
+            System.out.println(hashFile("testFolder/innerFolder/a.txt"));
+            newGit.makeBlob("testFolder/innerFolder/a.txt");
+
+            newGit.addFileEntry("testFolder/innerFolder/a.txt");
+
+            //////////////////////////
+
+            System.out.println("-------testing the working list------");
+            ArrayList<GitObject> testWorkingList = newGit.createWorkingList(); 
+
+            for (int i = 0; i < testWorkingList.size(); i++) {
+                GitObject testItem = testWorkingList.get(i);
+                System.out.println("blob " + testItem.getHash() + " " + testItem.getPath());
+            }
+
+            //////////////////////////
             
-            // adding hello.txt
-            testList.add(new BLOB(hashFile("Hello.txt"), "Hello.txt"));
+            System.out.println("-------testing createTreeFromIndex----------");
+            String rootDir = newGit.createTreeFromIndex();
+            System.out.println("root: " + rootDir);
+        
 
-            // adding bigfile.txt
-            testList.add(new BLOB(hashFile("bigfile.txt"), "bigfile.txt"));
+            
 
-            // adding test.txt
-            testList.add(new BLOB(hashFile("test.txt"), "test.txt"));
+            // System.out.println("-----testing createTree------");
+            // ArrayList<GitObject> testList = new ArrayList<GitObject>();
+            
+            // // adding hello.txt
+            // testList.add(new BLOB(hashFile("Hello.txt"), "Hello.txt"));
+
+            // // adding bigfile.txt
+            // testList.add(new BLOB(hashFile("bigfile.txt"), "bigfile.txt"));
+
+            // // adding test.txt
+            // testList.add(new BLOB(hashFile("test.txt"), "test.txt"));
 
   
 
-            String root = newGit.createTree(testList, "");
-            System.out.println("root tree: " + root);
+            // String root = newGit.createTree(testList, "");
+            // System.out.println("root tree: " + root);
             
 
             
@@ -117,7 +144,7 @@ public class Git {
 
 
         } catch (Exception e) {
-            System.out.println("Cannot Run SHA-1 Hash File");
+            System.out.println("Cannot Run SHA-1 Hash File" + " " + e);
         }
 
     }
@@ -356,29 +383,149 @@ public class Git {
 
 
     public ArrayList<GitObject> createWorkingList() throws IOException {
+        ArrayList<String> toSort = new ArrayList<String>();
         
-        ArrayList<GitObject> newList = new ArrayList<GitObject>();
+        
 
         BufferedReader br = new BufferedReader(new FileReader(index));
         String contents = br.readLine();
 
-    
-
         while (contents != null) {
-            String[] result = contents.split(" ");
-            String hash = result[0];
-            String path = result[1];
 
-            newList.add(new BLOB(hash, path)); // see the BLOB.java file where I made blob objects
+            if (!(contents.isEmpty())) { /// for empty lines
+                String[] result = contents.split(" ", 2); // in case of any weird situations like ex if the path had a space in it
+            
+                String hash = result[0];
+                String path = result[1];
 
+                int numberOfSlash = (path.split("/").length) - 1;
+
+                toSort.add(numberOfSlash + " " + path + " " + hash);
+
+                //newList.add(new BLOB(hash, path)); // see the BLOB.java file where I made blob objects
+            }
+        
             contents = br.readLine();
             
         }
 
         br.close();
 
+        //sorted by paths in order of deepest (most number of slashes) at tippity top
+        Collections.sort(toSort, Collections.reverseOrder());
+
+        //now built into a new list bc it needs to be hash first then path
+        // originally did path then hash just for the Collections to be able to sort it
+        
+        
+        ArrayList<GitObject> newList = new ArrayList<GitObject>();
+        for (int i = 0; i < toSort.size(); i++) {
+            String line = toSort.get(i);
+            int indexOfFirstSpace = line.indexOf(" ");
+            int indexOfLastSpace = line.lastIndexOf(" ");
+
+            String realPath = line.substring(indexOfFirstSpace + 1, indexOfLastSpace);
+            String realHash = line.substring(indexOfLastSpace + 1);
+
+            BLOB toAdd = new BLOB(realHash, realPath);
+            newList.add(toAdd);
+        }
+
         return newList;
 
     }
+
+    public String createTreeFromIndex() throws IOException {
+        ArrayList<GitObject> workingList = createWorkingList();
+        return recursiveBuildTree(workingList, "");
+
+    }
+
+    public String recursiveBuildTree(ArrayList<GitObject> workingList, String currentPath) throws IOException {
+
+        String parentPathStarter;
+        if (currentPath.isEmpty()) {
+            parentPathStarter = "";
+        } else {
+            parentPathStarter = currentPath + "/";
+        }
+        // we want the above thing bc then when we check for children directories we can see
+        // if it has a slash in it, bc then like the presence of a slash would indicate another nested directory
+        // but if we just kept current path as is, then there would always be a / at the beginning, and it
+        // would just be a lil messier to vibe with
+
+        boolean deeperSubDir = true;
+
+        // not base case
+
+        while (deeperSubDir == true) {
+            
+            deeperSubDir = false;
+            
+            for (int i = 0; i < workingList.size(); i++) {
+                String workingListPath = workingList.get(i).getPath();
+
+                //the code below basiclaly checks if the thing in workinglist is related by path to our currentPath
+                // if not, then it'll just be skipped and not thought about
+                // eventually at the very end, when all things are trees or blobs for the root, none of them will be related (kinda)
+                // so then it'll just skip all the way, and since at the beginning i set deeperSubDir to be false, the next 
+                // iteration the loop will end
+                if (workingListPath.startsWith(parentPathStarter)) {
+                    String restOfPath = workingListPath.substring(parentPathStarter.length());
+
+                    int slashIndex = restOfPath.indexOf("/");
+                    // ^ if u think about it, if there is a slash present, we know there is a deeper subDir
+
+                    if (slashIndex != -1) {
+                        String subDirectoryFullName = parentPathStarter + restOfPath.substring(0, slashIndex);
+
+                        // since we know we have a deeper subDir, we want to tree-ify that one first
+                        // so we recursive call
+
+                        String subDirectoryHash = recursiveBuildTree(workingList, subDirectoryFullName);
+
+                        // we not only want to build this tree, but we now have to get rid of the babies from the WL
+
+                        for (int j = workingList.size() - 1; j >= 0; j--) {
+                            // u gotta start from left bc you're removing, so you don't want the indices to be messed up
+                            
+                            String parentDir = getParentDirectory(workingList.get(j).getPath());
+                            if (parentDir.equals(subDirectoryFullName)) {
+                                workingList.remove(j);
+                            }
+                        }
+
+                        Directory newDir = new Directory(subDirectoryHash, subDirectoryFullName);
+                        workingList.add(newDir);
+                        deeperSubDir = true;
+                        break; 
+                        // ^^ gets out of the loops to start this whole while loop again with reset i and j variables
+
+                        
+                    }
+                }
+            }
+
+        }
+
+        
+
+        //base case
+        // base case happens if the given path in the parameter is the deepest path possible
+        // when this is true, we simply create the tree
+
+        return createTree(workingList, currentPath);
+    }
+
+    public String getParentDirectory(String path) {
+        int indexOfSlash = path.lastIndexOf("/");
+        if (indexOfSlash != -1) {
+            return path.substring(0, indexOfSlash);
+        } else {
+            return "";
+        }
+    }
+
+
 
 }

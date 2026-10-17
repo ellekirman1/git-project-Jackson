@@ -1,4 +1,4 @@
-public class GitObject {
+public class GitObject{
     
 
     private String hash;
@@ -42,7 +42,6 @@ public class GitObject {
         this.path = path;
     }
 
-    
 
     
 }
