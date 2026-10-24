@@ -174,11 +174,50 @@ public class Git {
 
             // String root = newGit.createTree(testList, "");
             // System.out.println("root tree: " + root);
-            
 
             
- 
 
+
+
+            System.out.println("\n\nExtra Testing for Table \n\n");
+
+//test 2
+            System.out.println("Testing for Duplicate Entries:");
+
+
+            newGit.addFileEntry("hello.txt");
+            newGit.addFileEntry("hello.txt");
+            System.out.println(Files.readString(newGit.getIndex().toPath()));
+
+// test 4
+            System.out.println("\nTesting for Duplicate Entries:\n\n");
+            newGit.addFileEntry("Hello.txt");
+            newGit.addFileEntry("Hello.txt");
+
+            System.out.println(Files.readString(newGit.getIndex().toPath()));            
+            // hello.txt should only pop up once
+
+//test 6
+            System.out.println("\ncreateTree writes one directory's tree:\n\n");
+            ArrayList<GitObject> testList = new ArrayList<>();
+            testList.add(new BLOB("abc123", "testFolder/a.txt"));
+            testList.add(new BLOB("def456", "testFolder/b.txt"));
+            String treeHash = newGit.createTree(testList, "testFolder");
+            System.out.println(Files.readString(Path.of("git/objects/" + treeHash)
+            ));
+
+            // Should contain two blob entries with just a.txt and b.txt
+//test 5
+            System.out.println("Root tree from staged files:");
+            //doesnt statge scratch
+
+            Files.writeString(Path.of("scratch.txt"), " ");
+            String rootHash = newGit.createTreeFromIndex();
+            System.out.println(Files.readString(
+                Path.of("git/objects/" + rootHash)
+            ));
+
+            // scratch.txt should not appear anywhere
 
         } catch (Exception e) {
             System.out.println("Cannot Run SHA-1 Hash File" + " " + e);
@@ -328,14 +367,27 @@ public class Git {
        
         String contents = br.readLine();
 
+
         while (contents != null) {
-            if (contents.equals(newContents)) {
-                br.close();
-                return;
+            // if (contents.equals(newContents)) {
+            //     return;
+            // } else {
+            //     fileContents.append(contents + "\n");
+            //     contents = br.readLine();
+            // }
+
+            //error in code. this compares just the contents - however needs to consider file name (if 2 hello.txt should not add duplicate entries)
+            //working code is below
+            //this code recondnises as same filename even when hashes are diffrent so it gets replaced if same file name
+            String[] parts = contents.split(" ", 2);
+
+            if (parts[1].equals(filePath)) {
+                contents = br.readLine();
             } else {
                 fileContents.append(contents + "\n");
                 contents = br.readLine();
-            }
+            }         
+            br.close();
         }
 
         
