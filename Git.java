@@ -185,8 +185,8 @@ public class Git {
             System.out.println("Testing for Duplicate Entries:");
 
 
-            newGit.addFileEntry("hello.txt");
-            newGit.addFileEntry("hello.txt");
+            newGit.addFileEntry("Hello.txt");
+            newGit.addFileEntry("Hello.txt");
             System.out.println(Files.readString(newGit.getIndex().toPath()));
 
 // test 4
@@ -196,6 +196,7 @@ public class Git {
 
             System.out.println(Files.readString(newGit.getIndex().toPath()));            
             // hello.txt should only pop up once
+            //already did hello again test
 
 //test 6
             System.out.println("\ncreateTree writes one directory's tree:\n\n");
@@ -204,9 +205,10 @@ public class Git {
             testList.add(new BLOB("def456", "testFolder/b.txt"));
             String treeHash = newGit.createTree(testList, "testFolder");
             System.out.println(Files.readString(Path.of("git/objects/" + treeHash)
-            ));
+            ));//im - uses readString
 
             // Should contain two blob entries with just a.txt and b.txt
+            //passes
 //test 5
             System.out.println("Root tree from staged files:");
             //doesnt statge scratch
@@ -387,7 +389,6 @@ public class Git {
                 fileContents.append(contents + "\n");
                 contents = br.readLine();
             }         
-            br.close();
         }
 
         
