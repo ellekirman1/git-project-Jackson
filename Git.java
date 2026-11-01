@@ -221,6 +221,38 @@ public class Git {
 
             // scratch.txt should not appear anywhere
 
+
+
+
+
+
+            //4.2 tests
+
+
+            System.out.println("------test 4.2------");
+
+            String commitElle = newGit.commit("Elle", "elles commit message");
+
+            System.out.println("commit hash: " + commitElle);
+             System.out.println("HEAD SHOULD BE SAME HASH AFTER ELLES COMMIT:");
+            System.out.println(Files.readString(newGit.getHEAD().toPath()));
+            System.out.println(" commit contents:");
+            System.out.println(Files.readString(new File(newGit.getObjects(), commitElle).toPath()));
+
+
+            //now makes a second commit
+            System.out.println("now makes a second commit \n\n");
+            String secondCommit = newGit.commit("abby", "abbys commit message");
+            System.out.println("PARENT OF ABBY SHOULD BE ELLES HASH");
+            System.out.println("commit hash: " + secondCommit);
+            System.out.println("HEAD after second commit - should be same as right before");
+            System.out.println(Files.readString(newGit.getHEAD().toPath()));
+            System.out.println("commit contents:" + Files.readString(new File(newGit.getObjects(), secondCommit).toPath()));
+
+            
+
+
+           
         } catch (Exception e) {
             System.out.println("Cannot Run SHA-1 Hash File" + " " + e);
         }
@@ -621,6 +653,42 @@ public class Git {
         }
     }
 
+
+
+
+
+    //4.2 code - commit method, writes in all the things needed in a commit message and returns a commit hash
+    public String commit(String author, String message) throws IOException {
+
+    String roothash = createTreeFromIndex();//makes root tree
+    String parenthash = Files.readString(HEAD.toPath()).trim();//uses head to find parent file
+    StringBuilder commitmes = new StringBuilder();//makes commit contents with all the requirements
+    
+    //CHECK - if parenthash is empty this line should not be there
+    if (!parenthash.isEmpty()) {
+        commitmes.append("parent: " + parenthash + "\n");
+    }
+    //writes the rest of the requiremtns regularly
+    commitmes.append("tree: " + roothash + "\n");
+    commitmes.append("author: " + author + "\n");
+    String date = "figure out how to do this";
+    commitmes.append("date: " + date + "\n");
+    commitmes.append("message: " + message + "\n");
+
+    //hash the conents
+    String finalContents = commitmes.toString();
+    String commitHash = hashText(finalContents.getBytes());
+
+    //writes the commit file
+    File commitFile = new File(objects, commitHash);    
+    FileWriter writer = new FileWriter(commitFile);
+    writer.write(finalContents);
+    writer.close();
+
+    Files.writeString(HEAD.toPath(), commitHash);//NEED to update head - im
+
+    return commitHash;
+}
 
 
 }
