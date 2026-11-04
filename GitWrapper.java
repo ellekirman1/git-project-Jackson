@@ -19,13 +19,10 @@ public class GitWrapper {
      */
     public static void add(String filePath) throws IOException {
 
-        if (git == null) {
-    init();
-}
         File file = new File(filePath);
 
         if (!file.exists() || file.isDirectory()) {
-            throw new IOException("Invalid file: " + filePath);
+            throw new IOException("invalid file: " + filePath);
         }
 
         git.makeBlob(filePath);
@@ -49,10 +46,6 @@ public class GitWrapper {
      * @throws IOException 
      */
     public static String commit(String author, String message) {
-        if (git == null) {
-            init();
-        }
-
         try {
             return git.commit(author, message);
     }    catch (IOException e) {
