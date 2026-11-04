@@ -657,21 +657,21 @@ public class Git {
 
 
 
-    //4.2 code - commit method, writes in all the things needed in a commit message and returns a commit hash
+    // commit method, writes in all the things needed in a commit message and returns a commit hash
     public String commit(String author, String message) throws IOException {
 
     String roothash = createTreeFromIndex();//makes root tree
-    String parenthash = Files.readString(HEAD.toPath()).trim();//uses head to find parent file
+    String parenthash = Files.readString(HEAD.toPath());//uses head to find parent file
     StringBuilder commitmes = new StringBuilder();//makes commit contents with all the requirements
-    
+    commitmes.append("tree: " + roothash + "\n");
     //CHECK - if parenthash is empty this line should not be there
     if (!parenthash.isEmpty()) {
         commitmes.append("parent: " + parenthash + "\n");
     }
     //writes the rest of the requiremtns regularly
-    commitmes.append("tree: " + roothash + "\n");
+    
     commitmes.append("author: " + author + "\n");
-    String date = "figure out how to do this";
+    String date = java.time.LocalDateTime.now().toString();
     commitmes.append("date: " + date + "\n");
     commitmes.append("message: " + message + "\n");
 
@@ -685,10 +685,11 @@ public class Git {
     writer.write(finalContents);
     writer.close();
 
-    Files.writeString(HEAD.toPath(), commitHash);//NEED to update head - im
-
+    Files.writeString(HEAD.toPath(), commitHash);//NEED to update head
     return commitHash;
 }
+
+
 
 
 }
